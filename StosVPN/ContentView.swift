@@ -247,17 +247,37 @@ class TunnelManager: ObservableObject {
                 
                 if let existingManager = stosManagers.first {
                     VPNLogger.shared.log("Found existing StosVPN configuration, using it instead of creating new one")
+                    if let existingProto = existingManager.protocolConfiguration as? NETunnelProviderProtocol,
+                       existingProto.excludeLocalNetworks {
+                        existingProto.excludeLocalNetworks = false
+                        existingManager.protocolConfiguration = existingProto
+                        existingManager.saveToPreferences { saveError in
+                            if let saveError = saveError {
+                                VPNLogger.shared.log("Failed to migrate excludeLocalNetworks on existing profile: \(saveError.localizedDescription)")
+                            } else {
+                                VPNLogger.shared.log("Migrated existing StosVPN profile: excludeLocalNetworks=false (iOS 26 fix)")
+                            }
+                            existingManager.loadFromPreferences { _ in
+                                DispatchQueue.main.async { completion(existingManager) }
+                            }
+                        }
+                        return
+                    }
                     completion(existingManager)
                     return
                 }
             }
-            
+
             let manager = NETunnelProviderManager()
             manager.localizedDescription = "StosVPN"
-            
+
             let proto = NETunnelProviderProtocol()
             proto.providerBundleIdentifier = self.tunnelBundleId
             proto.serverAddress = "StosVPN's Local Network Tunnel"
+            // iOS 26.x routes the tunnel's own RFC1918 subnet (10.7.0.0/24) out the
+            // physical interface when excludeLocalNetworks is YES, dead-ending traffic
+            // from StikDebug → tunneld. Force include local networks.
+            proto.excludeLocalNetworks = false
             manager.protocolConfiguration = proto
             
             let onDemandRule = NEOnDemandRuleEvaluateConnection()
