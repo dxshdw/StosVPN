@@ -6,14 +6,18 @@ CURRENT_PROJECT_VERSION = 1
 
 // Vars to be overwritten by `CodeSigning.xcconfig` if exists
 DEVELOPMENT_TEAM = 95J8WZ4TN8
-ORG_IDENTIFIER = com.stossy11
+ORG_IDENTIFIER = com.jkcoxson
 
 // Codesigning settings defined optionally, see `CodeSigning.xcconfig.example`
 #include? "CodeSigning.xcconfig"
 
 ORG_PREFIX = $(ORG_IDENTIFIER)
 
-PRODUCT_BUNDLE_IDENTIFIER =  $(ORG_PREFIX).StosVPN
+// Bundle id matches original LocalDevVPN so iLoader's whitelist applies the
+// paid-team-share signing flow that grants packet-tunnel-provider entitlement.
+// Without this, iLoader's free-cert path drops the network-extension entitlement
+// and iOS refuses to register the VPN profile (UI shows "Local Tunnel Inactive").
+PRODUCT_BUNDLE_IDENTIFIER =  $(ORG_PREFIX).LocalDevVPN
 
 TUNNEL_NAME = TunnelProv
 
