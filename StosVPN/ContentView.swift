@@ -247,7 +247,8 @@ class TunnelManager: ObservableObject {
                 
                 if let existingManager = stosManagers.first {
                     VPNLogger.shared.log("Found existing StosVPN configuration, using it instead of creating new one")
-                    if let existingProto = existingManager.protocolConfiguration as? NETunnelProviderProtocol,
+                    if #available(iOS 14.2, *),
+                       let existingProto = existingManager.protocolConfiguration as? NETunnelProviderProtocol,
                        existingProto.excludeLocalNetworks {
                         existingProto.excludeLocalNetworks = false
                         existingManager.protocolConfiguration = existingProto
@@ -277,7 +278,9 @@ class TunnelManager: ObservableObject {
             // iOS 26.x routes the tunnel's own RFC1918 subnet (10.7.0.0/24) out the
             // physical interface when excludeLocalNetworks is YES, dead-ending traffic
             // from StikDebug → tunneld. Force include local networks.
-            proto.excludeLocalNetworks = false
+            if #available(iOS 14.2, *) {
+                proto.excludeLocalNetworks = false
+            }
             manager.protocolConfiguration = proto
             
             let onDemandRule = NEOnDemandRuleEvaluateConnection()
